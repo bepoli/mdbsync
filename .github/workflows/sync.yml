@@ -1,0 +1,30 @@
+name: Sync Letterboxd Watchlist
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run sync
+        env:
+          MDBLIST_API_KEY: ${{ secrets.MDBLIST_API_KEY }}
+        run: bash pull_letterboxd.sh
+
+      - name: Persist last_sync
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .last_sync
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update last_sync"
+            git push
+          fi
