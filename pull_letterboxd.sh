@@ -23,7 +23,8 @@ last_sync=$(cat "$state_file" 2>/dev/null || echo "")
 
 extlists=$(curl -s "$base/external/lists/user$api")
 
-letterboxd_list=$(echo "$extlists" | jq '.[] | select(.name == "Letterboxd Watchlist")')
+letterboxd_list=$(echo "$extlists" | jq '.[] |
+  select(.name == "Letterboxd Watchlist")')
 letterboxd_id=$(echo "$letterboxd_list" | jq -r '.id')
 letterboxd_updated=$(echo "$letterboxd_list" | jq -r '.updated')
 
@@ -35,7 +36,10 @@ jq -rn \
   --argjson items "$items" \
   --argjson watchlist "$watchlist" \
   '($items.movies | map(.ids.mdblist)) as $letterboxd_ids |
-   $watchlist.movies | map(select(.ids.mdblist | IN($letterboxd_ids[]) | not)) | map("- \(.title)") | .[]'
+   $watchlist.movies
+   | map(select(.ids.mdblist | IN($letterboxd_ids[]) | not))
+   | map("- [\(.title)](https://letterboxd.com/imdb/\(.imdb_id))")
+   | .[]'
 
 if [[ -n "$last_sync" && ! "$letterboxd_updated" > "$last_sync" ]]; then
   echo "Up to date (last sync: $last_sync). Skipping."
@@ -56,6 +60,9 @@ jq -rn \
   --argjson before "$watchlist" \
   --argjson after "$watchlist_after" \
   '($before.movies | map(.ids.mdblist)) as $before_ids |
-   $after.movies | map(select(.ids.mdblist | IN($before_ids[]) | not)) | map("- \(.title)") | .[]'
+   $after.movies
+   | map(select(.ids.mdblist | IN($before_ids[]) | not))
+   | map("- \(.title)")
+   | .[]'
 
 date -u +"%Y-%m-%dT%H:%M:%S.000Z" > "$state_file"
