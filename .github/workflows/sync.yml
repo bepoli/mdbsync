@@ -28,3 +28,18 @@ jobs:
             git commit -m "chore: update last_sync"
             git push
           fi
+
+      - name: Send summary to Telegram
+        if: always()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_TO: ${{ secrets.TELEGRAM_TO }}
+        run: |
+          if [ -s "$GITHUB_STEP_SUMMARY" ]; then
+            TEXT="$(cat "$GITHUB_STEP_SUMMARY")"
+          else
+            TEXT="Sync completed, but summary was empty."
+          fi
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_TO}" \
+            --data-urlencode "text=${TEXT}"
